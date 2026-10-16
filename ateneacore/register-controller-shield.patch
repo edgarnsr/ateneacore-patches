@@ -1,0 +1,22 @@
+diff --git a/src/Controllers/RegisterController.php b/src/Controllers/RegisterController.php
+index 72d4e81..677febf 100644
+--- a/src/Controllers/RegisterController.php
++++ b/src/Controllers/RegisterController.php
+@@ -13,7 +13,7 @@
+ 
+ namespace CodeIgniter\Shield\Controllers;
+ 
+-use App\Controllers\BaseController;
++use AteneaCore\Controllers\CoreController;
+ use CodeIgniter\Events\Events;
+ use CodeIgniter\HTTP\RedirectResponse;
+ use CodeIgniter\HTTP\RequestInterface;
+@@ -32,7 +32,7 @@
+  * Handles displaying registration form,
+  * and handling actual registration flow.
+  */
+-class RegisterController extends BaseController
++class RegisterController extends CoreController
+ {
+     use Viewable;
+ 

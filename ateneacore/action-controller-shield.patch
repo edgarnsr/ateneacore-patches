@@ -1,0 +1,22 @@
+diff --git a/src/Controllers/ActionController.php b/src/Controllers/ActionController.php
+index b034176c..c94b80b6 100644
+--- a/src/Controllers/ActionController.php
++++ b/src/Controllers/ActionController.php
+@@ -13,7 +13,7 @@
+ 
+ namespace CodeIgniter\Shield\Controllers;
+ 
+-use App\Controllers\BaseController;
++use AteneaCore\Controllers\CoreController;
+ use CodeIgniter\Exceptions\PageNotFoundException;
+ use CodeIgniter\HTTP\Response;
+ use CodeIgniter\Shield\Authentication\Actions\ActionInterface;
+@@ -24,7 +24,7 @@
+  *
+  * A generic controller to handle Authentication Actions.
+  */
+-class ActionController extends BaseController
++class ActionController extends CoreController
+ {
+     protected ?ActionInterface $action = null;
+ 

@@ -1,0 +1,20 @@
+diff --git a/src/Controllers/LoginController.php b/src/Controllers/LoginController.php
+index 4d42b74..3b57302 100644
+--- a/src/Controllers/LoginController.php
++++ b/src/Controllers/LoginController.php
+@@ -13,13 +13,13 @@
+ 
+ namespace CodeIgniter\Shield\Controllers;
+ 
+-use App\Controllers\BaseController;
++use AteneaCore\Controllers\CoreController;
+ use CodeIgniter\HTTP\RedirectResponse;
+ use CodeIgniter\Shield\Authentication\Authenticators\Session;
+ use CodeIgniter\Shield\Traits\Viewable;
+ use CodeIgniter\Shield\Validation\ValidationRules;
+ 
+-class LoginController extends BaseController
++class LoginController extends CoreController
+ {
+     use Viewable;
+ 

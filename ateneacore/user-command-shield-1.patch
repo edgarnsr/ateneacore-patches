@@ -1,0 +1,27 @@
+diff --git a/src/Commands/User.php b/src/Commands/User.php
+index 1aa75a6..1923411 100644
+--- a/src/Commands/User.php
++++ b/src/Commands/User.php
+@@ -17,10 +17,8 @@
+ use CodeIgniter\Shield\Commands\Exceptions\BadInputException;
+ use CodeIgniter\Shield\Commands\Exceptions\CancelException;
+ use CodeIgniter\Shield\Config\Auth;
+-use CodeIgniter\Shield\Entities\User as UserEntity;
+ use CodeIgniter\Shield\Exceptions\UserNotFoundException;
+ use CodeIgniter\Shield\Models\GroupModel;
+-use CodeIgniter\Shield\Models\UserModel;
+ use CodeIgniter\Shield\Validation\ValidationRules;
+ use Config\Services;
+ 
+@@ -302,9 +300,9 @@ private function create(?string $username = null, ?string $email = null, ?string
+             throw new CancelException('User creation aborted');
+         }
+ 
+-        $userModel = model(UserModel::class);
++        $userModel = auth()->getProvider();
+ 
+-        $user = new UserEntity($data);
++        $user = $userModel->createNewUser($data);
+ 
+         // Validate the group
+         if ($group !== null && ! $this->validateGroup($group)) {

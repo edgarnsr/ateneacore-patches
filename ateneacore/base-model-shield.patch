@@ -1,0 +1,17 @@
+diff --git a/src/Models/BaseModel.php b/src/Models/BaseModel.php
+index 411e3242..f5a0c679 100644
+--- a/src/Models/BaseModel.php
++++ b/src/Models/BaseModel.php
+@@ -13,10 +13,10 @@
+ 
+ namespace CodeIgniter\Shield\Models;
+ 
+-use CodeIgniter\Model;
++use AteneaCore\Models\CoreModel;
+ use CodeIgniter\Shield\Config\Auth;
+ 
+-abstract class BaseModel extends Model
++abstract class BaseModel extends CoreModel
+ {
+     use CheckQueryReturnTrait;
+ 

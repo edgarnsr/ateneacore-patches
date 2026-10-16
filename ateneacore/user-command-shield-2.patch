@@ -1,0 +1,12 @@
+diff --git a/src/Commands/User.php b/src/Commands/User.php
+index 1923411..5d70747 100644
+--- a/src/Commands/User.php
++++ b/src/Commands/User.php
+@@ -13,6 +13,7 @@
+ 
+ namespace CodeIgniter\Shield\Commands;
+ 
++use AteneaCore\Users\Entities\User as UserEntity;
+ use CodeIgniter\Shield\Authentication\Authenticators\Session;
+ use CodeIgniter\Shield\Commands\Exceptions\BadInputException;
+ use CodeIgniter\Shield\Commands\Exceptions\CancelException;

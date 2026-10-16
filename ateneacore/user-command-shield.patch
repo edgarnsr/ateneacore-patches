@@ -1,0 +1,13 @@
+diff --git a/src/Commands/User.php b/src/Commands/User.php
+index 1f76340..1aa75a6 100644
+--- a/src/Commands/User.php
++++ b/src/Commands/User.php
+@@ -683,7 +683,7 @@ private function findUser($question = '', $username = null, $email = null): User
+             }
+         }
+ 
+-        $userModel = model(UserModel::class);
++        $userModel = auth()->getProvider();
+         $userModel
+             ->select($this->tables['users'] . '.id as id, username, secret')
+             ->join(

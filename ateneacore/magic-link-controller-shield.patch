@@ -1,0 +1,22 @@
+diff --git a/src/Controllers/MagicLinkController.php b/src/Controllers/MagicLinkController.php
+index 7ad0feb..74f3e38 100644
+--- a/src/Controllers/MagicLinkController.php
++++ b/src/Controllers/MagicLinkController.php
+@@ -13,7 +13,7 @@
+ 
+ namespace CodeIgniter\Shield\Controllers;
+ 
+-use App\Controllers\BaseController;
++use AteneaCore\Controllers\CoreController;
+ use CodeIgniter\Events\Events;
+ use CodeIgniter\Exceptions\PageNotFoundException;
+ use CodeIgniter\HTTP\IncomingRequest;
+@@ -34,7 +34,7 @@
+  * be used on it's own without an email/password
+  * login strategy.
+  */
+-class MagicLinkController extends BaseController
++class MagicLinkController extends CoreController
+ {
+     use Viewable;
+ 
