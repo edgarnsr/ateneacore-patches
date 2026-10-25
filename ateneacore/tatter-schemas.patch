@@ -1,0 +1,15 @@
+diff --git a/src/Drafter/Handlers/ModelHandler.php b/src/Drafter/Handlers/ModelHandler.php
+index d31ef31..42a248a 100644
+--- a/src/Drafter/Handlers/ModelHandler.php
++++ b/src/Drafter/Handlers/ModelHandler.php
+@@ -168,6 +168,10 @@ protected function getModels(): array
+                 continue;
+             }
+ 
++            if ((new \ReflectionClass($class))->isAbstract()) {
++                continue;
++            }
++
+             // Try to instantiate
+             try {
+                 $instance = new $class();
