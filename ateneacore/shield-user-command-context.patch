@@ -1,0 +1,263 @@
+diff --git a/src/Commands/User.php b/src/Commands/User.php
+index 5d70747..25c39a2 100644
+--- a/src/Commands/User.php
++++ b/src/Commands/User.php
+@@ -150,7 +150,7 @@ class User extends BaseCommand
+             return EXIT_ERROR;
+         }
+ 
+-        $userid      = (int) ($params['i'] ?? 0);
++        $userid      = (string) ($params['i'] ?? '');
+         $username    = $params['n'] ?? null;
+         $email       = $params['e'] ?? null;
+         $newUsername = $params['new-name'] ?? null;
+@@ -245,6 +245,24 @@ class User extends BaseCommand
+         // Remove `password_confirm` field.
+         unset($rules['password_confirm']);
+ 
++        // El grupo `user` admite duplicados; la unicidad solo se valida
++        // contra el grupo del proyecto (ver `unique_*_in_registration_group`).
++        foreach (['username', 'email'] as $field) {
++            if (! isset($rules[$field]['rules'])) {
++                continue;
++            }
++
++            $fieldRules = is_array($rules[$field]['rules'])
++                ? $rules[$field]['rules']
++                : explode('|', $rules[$field]['rules']);
++            $rules[$field]['rules'] = array_values(array_filter(
++                $fieldRules,
++                static fn ($rule): bool => ! (
++                    is_string($rule) && str_starts_with($rule, 'is_unique[')
++                ),
++            ));
++        }
++
+         $this->validationRules = $rules;
+     }
+ 
+@@ -310,6 +328,26 @@ class User extends BaseCommand
+             throw new CancelException('Invalid group: "' . $group . '"');
+         }
+ 
++        // En el grupo del proyecto el nombre de usuario y el correo deben ser únicos
++        if ($group !== null && strtolower($group) === $userModel->getRegistrationGroup()) {
++            $uniqueRules = [
++                'email' => ['rules' => 'unique_email_in_registration_group'],
++            ];
++            if ($username !== null) {
++                $uniqueRules['username'] = ['rules' => 'unique_username_in_registration_group'];
++            }
++
++            $uniqueValidation = Services::validation();
++            $uniqueValidation->setRules($uniqueRules);
++            if (! $uniqueValidation->run($data)) {
++                foreach ($uniqueValidation->getErrors() as $message) {
++                    $this->write($message, 'red');
++                }
++
++                throw new CancelException('User creation aborted');
++            }
++        }
++
+         if ($username === null) {
+             $userModel->allowEmptyInserts()->save($user);
+             $this->write('New User created', 'green');
+@@ -352,7 +390,7 @@ class User extends BaseCommand
+         $confirm = $this->prompt('Activate the user ' . $user->username . ' ?', ['y', 'n']);
+ 
+         if ($confirm === 'y') {
+-            $userModel = model(UserModel::class);
++            $userModel = auth()->getProvider();
+ 
+             $user->active = 1;
+             $userModel->save($user);
+@@ -376,7 +414,7 @@ class User extends BaseCommand
+         $confirm = $this->prompt('Deactivate the user "' . $username . '" ?', ['y', 'n']);
+ 
+         if ($confirm === 'y') {
+-            $userModel = model(UserModel::class);
++            $userModel = auth()->getProvider();
+ 
+             $user->active = 0;
+             $userModel->save($user);
+@@ -401,25 +439,22 @@ class User extends BaseCommand
+     ): void {
+         $user = $this->findUser('Change username', $username, $email);
+ 
++        $usernameRules = $this->rulesForExistingUser('username', $user->id);
+         if ($newUsername === null) {
+-            $newUsername = $this->prompt('New username', null, $this->validationRules['username']['rules']);
+-        } else {
+-            // Run validation if the user has passed username and/or email via command line
+-            $validation = Services::validation();
+-            $validation->setRules([
+-                'username' => $this->validationRules['username'],
+-            ]);
+-
+-            if (! $validation->run(['username' => $newUsername])) {
+-                foreach ($validation->getErrors() as $message) {
+-                    $this->write($message, 'red');
+-                }
++            $newUsername = $this->prompt('New username', null, $usernameRules['rules']);
++        }
+ 
+-                throw new CancelException('User name change aborted');
++        $validation = Services::validation();
++        $validation->setRules(['username' => $usernameRules]);
++        if (! $validation->run(['username' => $newUsername])) {
++            foreach ($validation->getErrors() as $message) {
++                $this->write($message, 'red');
+             }
++
++            throw new CancelException('User name change aborted');
+         }
+ 
+-        $userModel = model(UserModel::class);
++        $userModel = auth()->getProvider();
+ 
+         $oldUsername    = $user->username;
+         $user->username = $newUsername;
+@@ -442,25 +477,22 @@ class User extends BaseCommand
+     ): void {
+         $user = $this->findUser('Change email', $username, $email);
+ 
++        $emailRules = $this->rulesForExistingUser('email', $user->id);
+         if ($newEmail === null) {
+-            $newEmail = $this->prompt('New email', null, $this->validationRules['email']['rules']);
+-        } else {
+-            // Run validation if the user has passed username and/or email via command line
+-            $validation = Services::validation();
+-            $validation->setRules([
+-                'email' => $this->validationRules['email'],
+-            ]);
+-
+-            if (! $validation->run(['email' => $newEmail])) {
+-                foreach ($validation->getErrors() as $message) {
+-                    $this->write($message, 'red');
+-                }
++            $newEmail = $this->prompt('New email', null, $emailRules['rules']);
++        }
+ 
+-                throw new CancelException('User email change aborted');
++        $validation = Services::validation();
++        $validation->setRules(['email' => $emailRules]);
++        if (! $validation->run(['email' => $newEmail])) {
++            foreach ($validation->getErrors() as $message) {
++                $this->write($message, 'red');
+             }
++
++            throw new CancelException('User email change aborted');
+         }
+ 
+-        $userModel = model(UserModel::class);
++        $userModel = auth()->getProvider();
+ 
+         $user->email = $newEmail;
+         $userModel->save($user);
+@@ -475,11 +507,11 @@ class User extends BaseCommand
+      * @param string|null $username User name to search for (optional)
+      * @param string|null $email    User email to search for (optional)
+      */
+-    private function delete(int $userid = 0, ?string $username = null, ?string $email = null): void
++    private function delete(string $userid = '', ?string $username = null, ?string $email = null): void
+     {
+-        $userModel = model(UserModel::class);
++        $userModel = auth()->getProvider();
+ 
+-        if ($userid !== 0) {
++        if ($userid !== '') {
+             $user = $userModel->findById($userid);
+ 
+             $this->checkUserExists($user);
+@@ -539,7 +571,7 @@ class User extends BaseCommand
+                 throw new BadInputException("The passwords don't match");
+             }
+ 
+-            $userModel = model(UserModel::class);
++            $userModel = auth()->getProvider();
+ 
+             $user->password = $password;
+             $userModel->save($user);
+@@ -558,7 +590,8 @@ class User extends BaseCommand
+      */
+     private function list(?string $username = null, ?string $email = null): void
+     {
+-        $userModel = model(UserModel::class);
++        $userModel = auth()->getProvider();
++        $groupUsersTable = $this->tables['groups_users'];
+         $userModel
+             ->select($this->tables['users'] . '.id as id, username, secret as email')
+             ->join(
+@@ -566,6 +599,11 @@ class User extends BaseCommand
+                 $this->tables['users'] . '.id = ' . $this->tables['identities'] . '.user_id',
+                 'LEFT',
+             )
++            ->join(
++                $groupUsersTable,
++                $this->tables['users'] . '.id = ' . $groupUsersTable . '.user_id',
++            )
++            ->where($groupUsersTable . '.group', $userModel->getRegistrationGroup())
+             ->groupStart()
+             ->where($this->tables['identities'] . '.type', Session::ID_TYPE_EMAIL_PASSWORD)
+             ->orGroupStart()
+@@ -642,6 +680,9 @@ class User extends BaseCommand
+         if (! $this->validateGroup($group)) {
+             throw new CancelException('Invalid group: "' . $group . '"');
+         }
++        if (strtolower($group) === auth()->getProvider()->getRegistrationGroup()) {
++            throw new CancelException('Cannot remove the project group: "' . $group . '"');
++        }
+ 
+         $user = $this->findUser('Remove user from group', $username, $email);
+ 
+@@ -683,13 +724,19 @@ class User extends BaseCommand
+         }
+ 
+         $userModel = auth()->getProvider();
++        $groupUsersTable = $this->tables['groups_users'];
+         $userModel
+-            ->select($this->tables['users'] . '.id as id, username, secret')
++            ->select($this->tables['users'] . '.id as id, username, secret as email')
+             ->join(
+                 $this->tables['identities'],
+                 $this->tables['users'] . '.id = ' . $this->tables['identities'] . '.user_id',
+                 'LEFT',
+             )
++            ->join(
++                $groupUsersTable,
++                $this->tables['users'] . '.id = ' . $groupUsersTable . '.user_id',
++            )
++            ->where($groupUsersTable . '.group', $userModel->getRegistrationGroup())
+             ->groupStart()
+             ->where($this->tables['identities'] . '.type', Session::ID_TYPE_EMAIL_PASSWORD)
+             ->orGroupStart()
+@@ -709,4 +756,28 @@ class User extends BaseCommand
+ 
+         return $userModel->findById($user['id']);
+     }
++
++    /**
++     * Adds the exception for the current user's ID to a field's scoped
++     * uniqueness rule, allowing unchanged values during edits.
++     *
++     * @return array<string, mixed>
++     */
++    private function rulesForExistingUser(string $field, string $userId): array
++    {
++        $rules = $this->validationRules[$field];
++        $fieldRules = is_array($rules['rules'])
++            ? $rules['rules']
++            : explode('|', $rules['rules']);
++        $baseRule = 'unique_' . $field . '_in_registration_group';
++
++        $fieldRules = array_values(array_filter(
++            $fieldRules,
++            static fn ($rule): bool => $rule !== $baseRule,
++        ));
++        $fieldRules[] = $baseRule . '_except[' . $userId . ']';
++        $rules['rules'] = $fieldRules;
++
++        return $rules;
++    }
+ }
