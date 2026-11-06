@@ -1,0 +1,57 @@
+diff --git a/src/Traits/HasUuid.php b/src/Traits/HasUuid.php
+index a86c5c3..f84bd18 100644
+--- a/src/Traits/HasUuid.php
++++ b/src/Traits/HasUuid.php
+@@ -29,7 +29,7 @@ trait HasUuid
+     /**
+      * @return void
+      */
+-    public function initialize()
++    public function initialize(): void
+     {
+         $this->initUuid();
+     }
+@@ -166,7 +166,7 @@ trait HasUuid
+             return $this->toBinaryLiteral($uuid->toBinary(), $this->db->DBDriver);
+         }
+ 
+-        return $uuid->toRfc4122();
++        return $uuid->toBase32();
+     }
+ 
+     /**
+@@ -255,15 +255,30 @@ trait HasUuid
+     {
+         $result = parent::doInsert($row);
+ 
+-        if (isset($this->uuidFields[$this->primaryKey])
+-            && $this->uuidFields[$this->primaryKey]['type'] === UuidType::BYTES
+-            && $this->insertID instanceof RawSql) {
+-            $this->insertID = Uuid::fromBinary($this->fromBinaryLiteral($this->insertID, $this->db->DBDriver))->toRfc4122();
++        if (isset($this->uuidFields[$this->primaryKey])) {
++            if ($this->uuidFields[$this->primaryKey]['type'] === UuidType::BYTES
++                && $this->insertID instanceof RawSql) {
++                $this->insertID = Uuid::fromBinary($this->fromBinaryLiteral($this->insertID, $this->db->DBDriver))->toRfc4122();
++            } elseif (isset($row[$this->primaryKey])) {
++                $this->insertID = $row[$this->primaryKey];
++            }
+         }
+ 
+         return $result;
+     }
+ 
++    /**
++     * Returns the generated UUID without the numeric cast of the parent.
++     */
++    public function getInsertID()
++    {
++        if (isset($this->uuidFields[$this->primaryKey])) {
++            return $this->insertID;
++        }
++
++        return parent::getInsertID();
++    }
++
+     protected function doUpdate($id = null, $row = null): bool
+     {
+         if (! in_array($id, [null, '', 0, '0', []], true)) {

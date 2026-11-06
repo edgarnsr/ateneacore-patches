@@ -1,0 +1,13 @@
+diff --git a/src/Traits/ModelTrait.php b/src/Traits/ModelTrait.php
+index 738c233..695e97c 100644
+--- a/src/Traits/ModelTrait.php
++++ b/src/Traits/ModelTrait.php
+@@ -177,7 +177,7 @@ trait ModelTrait
+      *
+      * @return array|null
+      */
+-    public function findAll(int $limit = 0, int $offset = 0)
++    public function findAll(?int $limit = null, int $offset = 0)
+     {
+         $data = parent::findAll($limit, $offset);
+ 
