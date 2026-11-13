@@ -1,0 +1,22 @@
+diff --git a/src/Helpers/auth_helper.php b/src/Helpers/auth_helper.php
+index b05accb..81d7769 100644
+--- a/src/Helpers/auth_helper.php
++++ b/src/Helpers/auth_helper.php
+@@ -40,6 +40,16 @@ if (! function_exists('user_id')) {
+         /** @var Auth $auth */
+         $auth = service('auth');
+ 
+-        return $auth->id();
++        foreach (config('Auth')->authenticationChain as $alias) {
++            $auth->setAuthenticator($alias);
++
++            $id = $auth->id();
++
++            if ($id !== null) {
++                return $id;
++            }
++        }
++
++        return null;
+     }
+ }
