@@ -1,0 +1,73 @@
+diff --git a/src/Entities/Group.php b/src/Entities/Group.php
+index bd397ad..32c3928 100644
+--- a/src/Entities/Group.php
++++ b/src/Entities/Group.php
+@@ -24,6 +24,22 @@ class Group extends Entity
+ {
+     protected ?array $permissions = null;
+ 
++    /**
++     * Contexto cuya matriz de permisos se usa. Sin contexto, se usa la matriz global.
++     */
++    protected ?string $context = null;
++
++    /**
++     * Asigna el contexto de la matriz de permisos y reinicia la cach� de permisos.
++     */
++    public function setContext(string $context): self
++    {
++        $this->context     = $context;
++        $this->permissions = null;
++
++        return $this;
++    }
++
+     /**
+      * Returns the permissions for this group.
+      */
+@@ -42,11 +58,11 @@ class Group extends Entity
+     {
+         $this->permissions = $permissions;
+ 
+-        $matrix = setting('AuthGroups.matrix');
++        $matrix = $this->leerMatriz();
+ 
+         $matrix[$this->alias] = $permissions;
+ 
+-        setting('AuthGroups.matrix', $matrix);
++        $this->guardarMatriz($matrix);
+     }
+ 
+     /**
+@@ -94,6 +110,30 @@ class Group extends Entity
+             return;
+         }
+ 
+-        $this->permissions = setting('AuthGroups.matrix')[$this->alias] ?? [];
++        $this->permissions = $this->leerMatriz()[$this->alias] ?? [];
++    }
++
++    /**
++     * @return array<string, list<string>>
++     */
++    private function leerMatriz(): array
++    {
++        return $this->context === null
++            ? setting('AuthGroups.matrix')
++            : g_setting('AuthGroups.matrix', $this->context);
++    }
++
++    /**
++     * @param array<string, list<string>> $matrix
++     */
++    private function guardarMatriz(array $matrix): void
++    {
++        if ($this->context === null) {
++            setting('AuthGroups.matrix', $matrix);
++
++            return;
++        }
++
++        s_setting('AuthGroups.matrix', $matrix, $this->context);
+     }
+ }
